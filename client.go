@@ -1,4 +1,4 @@
-package main
+package gocoingecko
 
 import (
 	// "fmt"
@@ -9,6 +9,23 @@ import (
 	// "encoding/json"
 )
 
+const API_BASE_URL = "https://api.coingecko.com/api/v3"
+
+func NewClient(apiBaseURL string, timeout int) (*Client, error) {
+	return &Client{
+		Client: &http.Client{},
+		ApiBaseURL: API_BASE_URL,
+		Timeout: timeout,
+	}, nil
+}
+
+func (c *Client) Send(req *http.Request, v interface{}) error {
+	var (
+		err  error
+		resp *http.Response
+		data []byte
+	)
+}
 func httpClient() *http.Client {
 	client := &http.Client{Timeout: 10 * time.Second}
 	return client
@@ -40,9 +57,3 @@ func sendRequest(client *http.Client, method string) []byte {
 	return body
 }
 
-func main() {
-  // c should be re-used for further calls
-	c := httpClient()
-	response := sendRequest(c, http.MethodGet)
-	log.Println("Response Body:", string(response))
-}
