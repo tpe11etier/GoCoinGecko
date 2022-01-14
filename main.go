@@ -1,17 +1,25 @@
 package main
 
-import ( 
-	"github.com/tpe11etier/GoCoinGecko/client"
-	"net/http"
+import (
+	"fmt"
+	// "fmt"
 	"log"
+
+	// "net/http"
+
+	gecko "github.com/tpe11etier/gocoingecko/client"
 )
 
 const API_BASE_URL = "https://api.coingecko.com/api/v3"
 
 func main() {
-	// c should be re-used for further calls
-	  c, err := gocoingecko.NewClient(API_BASE_URL,10)
-	  response := c.Send(c, http.MethodGet)
-	//   response := gocoingecko.SendRequest(c, http.MethodGet)
-	  log.Println("Response Body:", string(response))
+	cg := gecko.NewClient(nil)
+	res, err := cg.GetSimplePrice([]string{"bitcoin,cardano"}, []string{"usd"})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(res)
+
   }

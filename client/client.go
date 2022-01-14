@@ -1,107 +1,101 @@
-package gocoingecko
+package client
 
 import (
-	// "fmt"
-	"io"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"time"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/url"
+	"io/ioutil"
+	"strings"
+	"github.com/tpe11etier/gocoingecko/types"
 )
 
-const API_BASE_URL = "https://api.coingecko.com/api/v3"
+var baseURL = "https://api.coingecko.com/api/v3"
 
-func NewClient(apiBaseURL string, timeout int) (*Client, error) {
-	return &Client{
-		Client: &http.Client{},
-		ApiBaseURL: API_BASE_URL,
-		Timeout: timeout,
-	}, nil
+type Client struct {
+	httpClient *http.Client
 }
 
-
-func HttpClient() *http.Client {
-	client := &http.Client{Timeout: 10 * time.Second}
-	return client
-}
-
-// Send makes a request to the API, the response body will be
-// unmarshalled into v, or if v is an io.Writer, the response will
-// be written to it without decoding
-func (c *Client) Send(req *http.Request, v interface{}) error {
-	var (
-		err  error
-		resp *http.Response
-		data []byte
-	)
-
-	// Set default headers
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Accept-Language", "en_US")
-
-	// Default values for headers
-	if req.Header.Get("Content-type") == "" {
-		req.Header.Set("Content-type", "application/json")
+func NewClient(httpClient *http.Client) *Client {
+	if httpClient == nil {
+		httpClient = http.DefaultClient
 	}
-	// if c.returnRepresentation {
-	// 	req.Header.Set("Prefer", "return=representation")
-	// }
+	return &Client{httpClient: httpClient}
+}
 
-	resp, err = c.Client.Do(req)
-	// c.log(req, resp)
+// Ping /ping endpoint
+func (c *Client) Ping() (*types.Ping, error) {
+	url := fmt.Sprintf("%s/ping", baseURL)
+	resp, err := c.MakeReq(url)
+	if err != nil {
+		return nil, err
+	}
+	var data *types.Ping
+	err = json.Unmarshal(resp, &data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// MakeReq HTTP Request Helper
+func (c *Client) MakeReq(url string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
 
 	if err != nil {
-		return err
+		return nil, err
+	}
+	resp, err := sendReq(req, c.httpClient)
+	if err != nil {
+		return nil, err
+	}
+	return resp, err
+}
+
+// Send Request after Make
+func sendReq(req *http.Request, client *http.Client) ([]byte, error) {
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
 	}
 	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		errResp := &ErrorResponse{Response: resp}
-		data, err = ioutil.ReadAll(resp.Body)
-
-		if err == nil && len(data) > 0 {
-			json.Unmarshal(data, errResp)
-		}
-
-		return errResp
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
 	}
-	if v == nil {
-		return nil
+	if 200 != resp.StatusCode {
+		return nil, fmt.Errorf("%s", body)
 	}
-
-	if w, ok := v.(io.Writer); ok {
-		io.Copy(w, resp.Body)
-		return nil
-	}
-
-	return json.NewDecoder(resp.Body).Decode(v)
+	return body, nil
 }
 
-func SendRequest(client *http.Client, method string) []byte {
-	endpoint := "https://api.coingecko.com/api/v3/simple/price?ids=ethereum%2Ccardano&vs_currencies=usd"
-    //   values := map[string]string{"ids": "cardano"}
-	// jsonData, err := json.Marshal(values)
 
-	req, err := http.NewRequest(method, endpoint, nil)
+func (c *Client) GetSimplePrice(ids []string, vsCurrencies []string) (*map[string]map[string]float32, error) {
+	params := url.Values{}
+	idsParam := strings.Join(ids[:], ",")
+	vsCurrenciesParam := strings.Join(vsCurrencies[:], ",")
+
+	params.Add("ids", idsParam)
+	params.Add("vs_currencies", vsCurrenciesParam)
+
+	url := fmt.Sprintf("%s/simple/price?%s", baseURL, params.Encode())
+	resp, err := c.MakeReq(url)
 	if err != nil {
-		log.Fatalf("Error Occurred. %+v", err)
+		return nil, err
 	}
 
+	t := make(map[string]map[string]float32)
+	err = json.Unmarshal(resp, &t)
+	if err != nil {
+		return nil, err
+	}
+
+	return &t, nil
+}
+
+
+func (c *Client) GetCoinsMarkets(vsCurrency string, ids []string, order string, perPage int, page int, sparkline bool, priceChangePercentage []string) (*types.CoinsMarket, error) {
+	params := url.Values{}
 	
-	response, err := client.Do(req)
-	if err != nil {
-		log.Fatalf("Error sending request to API endpoint. %+v", err)
-	}
 
-	// Close the connection to reuse it
-	defer response.Body.Close()
-
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Fatalf("Couldn't parse response body. %+v", err)
-	}
-
-	return body
 }
-
