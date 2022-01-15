@@ -1,3 +1,3 @@
-module github.com/tpe11etier/GoCoinGecko
+module github.com/tpe11etier/gocoingecko
 
 go 1.17

@@ -1,5 +1,18 @@
 package types
 
+
+// Coin Markets Request Optionals
+type CoinsMarketOptions struct {
+	Ids string `json:"ids"`
+	Category string `json:"category"`
+	Order string `json:"order"`
+	PerPage int `json:"per_page"`
+	Page int `json:"page"`
+	Sparkline bool `json:"sparkline"`
+	PriceChangePercentage string `json:"price_change_percentage"`
+}
+
+
 // OrderType
 
 // OrderType in CoinGecko

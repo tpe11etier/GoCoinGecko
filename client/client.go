@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"io/ioutil"
 	"strings"
+	"strconv"
 	"github.com/tpe11etier/gocoingecko/types"
 )
 
@@ -94,20 +95,36 @@ func (c *Client) GetSimplePrice(ids []string, vsCurrencies []string) (*map[strin
 }
 
 
-func (c *Client) GetCoinsMarkets(vsCurrency string, ids []string, order string, perPage int, page int, sparkline bool, priceChangePercentage []string) (*types.CoinsMarket, error) {
+func (c *Client) GetCoinsMarkets(vsCurrency string, options *types.CoinsMarketOptions) (*types.CoinsMarket, error) {
 	params := url.Values{}
 
-	idsParam := strings.Join(ids[:], ",")
-
 	params.Add("vs_currency", vsCurrency)
-	params.Add("ids", idsParam)
+	
+	if options != nil {
+		params.Add("ids", options.Ids)
+		params.Add("category", options.Category)
+		params.Add("order", options.Order)
+		params.Add("per_page", strconv.Itoa(options.PerPage))
+		params.Add("page", strconv.Itoa(options.Page))
+		params.Add("sparkline", strconv.FormatBool(options.Sparkline))
+		params.Add("price_change_percentage", options.PriceChangePercentage)
+	}
 
 	url := fmt.Sprintf("%s/coins/markets?%s", baseURL, params.Encode())
 	resp, err := c.MakeReq(url)
 	if err != nil {
 		return nil, err
 	}
+
+	var data *types.CoinsMarket
+	err = json.Unmarshal(resp, &data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return data, nil
 	
-	
+
 
 }
