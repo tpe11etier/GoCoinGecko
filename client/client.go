@@ -96,6 +96,18 @@ func (c *Client) GetSimplePrice(ids []string, vsCurrencies []string) (*map[strin
 
 func (c *Client) GetCoinsMarkets(vsCurrency string, ids []string, order string, perPage int, page int, sparkline bool, priceChangePercentage []string) (*types.CoinsMarket, error) {
 	params := url.Values{}
+
+	idsParam := strings.Join(ids[:], ",")
+
+	params.Add("vs_currency", vsCurrency)
+	params.Add("ids", idsParam)
+
+	url := fmt.Sprintf("%s/coins/markets?%s", baseURL, params.Encode())
+	resp, err := c.MakeReq(url)
+	if err != nil {
+		return nil, err
+	}
+	
 	
 
 }
